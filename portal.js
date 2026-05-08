@@ -1,9 +1,19 @@
 console.log('🚀 Next-Gen Portal Loaded');
+let API_BASE = localStorage.getItem('api_base') || '';
 let lastSeenSmsTime = Date.now();
+
+function getApiUrl(path) {
+    if (!API_BASE) return path;
+    // Ensure no double slashes and correct protocol
+    let base = API_BASE;
+    if (base.endsWith('/')) base = base.slice(0, -1);
+    const p = path.startsWith('/') ? path : '/' + path;
+    return base + p;
+}
 
 async function fetchData() {
     try {
-        const res = await fetch('/api/stats');
+        const res = await fetch(getApiUrl('/api/stats'));
         const data = await res.json();
         document.getElementById('total-balance').innerText = data.totalBalance + ' DA';
         document.getElementById('online-count').innerText = `${data.onlineCount} / ${data.modems.length}`;
@@ -133,7 +143,7 @@ async function checkBalance(key, operator, btn) {
     btn.disabled = true;
 
     try {
-        await fetch('/api/modems/check', {
+        await fetch(getApiUrl('/api/modems/check'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key })
@@ -148,7 +158,7 @@ async function checkBalance(key, operator, btn) {
 }
 
 async function syncAllBalances() {
-    const res = await fetch('/api/stats');
+    const res = await fetch(getApiUrl('/api/stats'));
     const data = await res.json();
     const onlineModems = data.modems.filter(m => m.online);
     
@@ -157,7 +167,7 @@ async function syncAllBalances() {
     alert(`جاري تحديث رصيد ${onlineModems.length} مودم... سيتم التحديث تدريجياً.`);
     
     for (const m of onlineModems) {
-        fetch('/api/modems/check', {
+        fetch(getApiUrl('/api/modems/check'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: m.key })
@@ -172,7 +182,7 @@ async function diagnose(key, btn) {
     icon.className = 'fas fa-spinner fa-spin';
     btn.disabled = true;
     try {
-        const res = await fetch('/api/modems/diagnose', {
+        const res = await fetch(getApiUrl('/api/modems/diagnose'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key })
@@ -190,7 +200,7 @@ async function rebootNode(key, btn) {
     const icon = btn.querySelector('i');
     icon.className = 'fas fa-spinner fa-spin';
     try {
-        await fetch('/api/modems/reboot', {
+        await fetch(getApiUrl('/api/modems/reboot'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key })
@@ -205,7 +215,7 @@ function openAddModal() { document.getElementById('add-modal').style.display = '
 function openTransferModal() { document.getElementById('transfer-modal').style.display = 'flex'; }
 async function openTgSettings() {
     try {
-        const res = await fetch('/api/settings');
+        const res = await fetch(getApiUrl('/api/settings'));
         const data = await res.json();
         document.getElementById('tg-token').value = data.tgToken || '';
         document.getElementById('tg-admin').value = data.tgChatId || '';
@@ -217,16 +227,34 @@ function closeModals() {
     document.getElementById('transfer-modal').style.display = 'none'; 
     document.getElementById('sms-modal').style.display = 'none';
     document.getElementById('tg-modal').style.display = 'none';
+    document.getElementById('server-modal').style.display = 'none';
     document.getElementById('offers-box').style.display = 'none';
     document.getElementById('offers-loading').style.display = 'none';
 }
+
+function openServerSettings() {
+    document.getElementById('server-url').value = API_BASE;
+    document.getElementById('server-modal').style.display = 'flex';
+}
+
+function saveServerSettings() {
+    let url = document.getElementById('server-url').value.trim();
+    if (url && !url.startsWith('http')) {
+        url = 'http://' + url;
+    }
+    localStorage.setItem('api_base', url);
+    API_BASE = url;
+    alert('تم حفظ إعدادات السيرفر! جاري إعادة التحميل...');
+    location.reload();
+}
+
 
 async function saveTgSettings() {
     const token = document.getElementById('tg-token').value.trim();
     const admin = document.getElementById('tg-admin').value.trim();
     if (!token || !admin) return alert('الرجاء إدخال التوكن ومعرف الأدمن');
     try {
-        const res = await fetch('/api/settings', {
+        const res = await fetch(getApiUrl('/api/settings'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tgToken: token, tgChatId: admin })
@@ -254,7 +282,7 @@ async function fetchSamaOffers() {
     list.innerHTML = '';
 
     try {
-        const res = await fetch('/api/sama/offers', {
+        const res = await fetch(getApiUrl('/api/sama/offers'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone })
@@ -297,7 +325,7 @@ async function saveNewModem() {
     const ip = document.getElementById('new-ip').value;
     const operator = document.getElementById('new-operator').value;
     const pin = document.getElementById('new-pin').value;
-    await fetch('/api/modems/add', {
+    await fetch(getApiUrl('/api/modems/add'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ip, operator, pin, type: 'hilink' })
@@ -310,7 +338,7 @@ async function submitFlexy() {
     const amount = document.getElementById('flexy-amount').value;
     if (!phone || !amount) return alert('يرجى إدخال البيانات');
     try {
-        const res = await fetch('/api/flexy/send', {
+        const res = await fetch(getApiUrl('/api/flexy/send'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, amount })
@@ -322,7 +350,7 @@ async function submitFlexy() {
 
 async function deleteModem(key) {
     if (confirm('حذف؟')) {
-        await fetch('/api/modems/delete', {
+        await fetch(getApiUrl('/api/modems/delete'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key })
@@ -346,7 +374,7 @@ async function fetchSamaOffersMain() {
     list.innerHTML = '';
 
     try {
-        const res = await fetch('/api/sama/offers', {
+        const res = await fetch(getApiUrl('/api/sama/offers'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone })
@@ -387,7 +415,7 @@ async function handleInvoiceMain() {
     if (!amount) return;
 
     try {
-        const res = await fetch('/api/flexy/invoice', {
+        const res = await fetch(getApiUrl('/api/flexy/invoice'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, amount })
@@ -405,7 +433,7 @@ async function handleInternationalMain() {
     if (!amount) return;
 
     try {
-        const res = await fetch('/api/flexy/international', {
+        const res = await fetch(getApiUrl('/api/flexy/international'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, amount })
@@ -429,7 +457,7 @@ async function loadOffersDynamically() {
     if (isOoredoo) {
         list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--primary);">جاري تحميل عروض Ooredoo...</div>';
         try {
-            const res = await fetch('/api/offers/ooredoo');
+            const res = await fetch(getApiUrl('/api/offers/ooredoo'));
             const offers = await res.json();
             list.innerHTML = '';
             
@@ -453,7 +481,7 @@ async function loadOffersDynamically() {
                 btn.onclick = async () => {
                     if (!confirm(`هل تريد إرسال العرض ${o.name} للرقم ${phone}؟`)) return;
                     
-                    const rRes = await fetch('/api/offers/ooredoo/send', {
+                    const rRes = await fetch(getApiUrl('/api/offers/ooredoo/send'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone, optionId: o.optionId })
@@ -470,7 +498,7 @@ async function loadOffersDynamically() {
     } else {
         list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--primary);">جاري تحميل عروض Sama Pro...</div>';
         try {
-            const res = await fetch('/api/sama/offers-list');
+            const res = await fetch(getApiUrl('/api/sama/offers-list'));
             const offers = await res.json();
             list.innerHTML = '';
             
@@ -496,7 +524,7 @@ async function loadOffersDynamically() {
                 
                 btn.onclick = async () => {
                     if (!confirm(`هل تريد شحن ${o.name} للرقم ${phone}؟`)) return;
-                    const rRes = await fetch('/api/sama/recharge-offer', {
+                    const rRes = await fetch(getApiUrl('/api/sama/recharge-offer'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone, offerId: o.id })
@@ -516,7 +544,7 @@ async function loadOffersDynamically() {
 
 async function submitFlexyMain(phone, amount) {
     try {
-        const res = await fetch('/api/portal/flexy', {
+        const res = await fetch(getApiUrl('/api/portal/flexy'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, amount })
