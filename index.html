@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLEXY PRO MAX | NEXT-GEN</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #00d2ff;
+            --accent: #3a7bd5;
+            --success: #00ff88;
+            --danger: #ff0055;
+            --text: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', 'Cairo', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+
+        /* Animated Background */
+        .bg-glow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 50% 50%, #1a237e 0%, #05070a 70%); opacity: 0.5; }
+
+        .app-container { display: flex; height: 100vh; padding: 20px; gap: 20px; }
+
+        /* Sidebar Glass */
+        .sidebar { width: 300px; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 30px; padding: 40px 30px; display: flex; flex-direction: column; }
+        .logo { font-size: 2rem; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--success)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 50px; text-align: center; letter-spacing: 2px; }
+
+        .nav-link { padding: 18px 25px; border-radius: 20px; margin-bottom: 15px; cursor: pointer; transition: 0.4s; display: flex; align-items: center; gap: 15px; font-weight: 600; color: rgba(255,255,255,0.5); }
+        .nav-link:hover, .nav-link.active { background: var(--glass); color: var(--primary); box-shadow: 0 0 20px rgba(0, 210, 255, 0.1); border: 1px solid var(--glass-border); }
+
+        /* Main View */
+        .main-view { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 10px; }
+        
+        /* Stats Floating */
+        .stats-header { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px; position: relative; overflow: hidden; }
+        .glass-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(to right, transparent, var(--primary), transparent); }
+
+        /* Modem Grid Next-Gen */
+        .modem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 25px; }
+        .modem-node { background: var(--glass); border-radius: 35px; border: 1px solid var(--glass-border); padding: 30px; transition: 0.5s; position: relative; }
+        .modem-node:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        /* Gauge Signal */
+        .gauge-container { width: 100px; height: 100px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .gauge-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .gauge-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 8; }
+        .gauge-val { fill: none; stroke: var(--primary); stroke-width: 8; stroke-dasharray: 251; stroke-dashoffset: 251; transition: 1s; stroke-linecap: round; filter: drop-shadow(0 0 5px var(--primary)); }
+
+        .val-text { position: absolute; font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+
+        /* Balance Display */
+        .balance-neon { font-size: 2rem; font-weight: 800; color: var(--success); text-shadow: 0 0 15px rgba(0, 255, 136, 0.3); margin: 10px 0; }
+
+        /* Controls */
+        .node-actions { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-neon { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: 0.3s; font-weight: 700; }
+        .btn-neon:hover { background: var(--primary); color: #000; box-shadow: 0 0 20px var(--primary); border-color: transparent; }
+
+        /* Custom Scroll */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        .operator-icon { width: 50px; height: 50px; border-radius: 15px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">FLEXY MAX</div>
+            <div class="nav-link" onclick="openTransferModal()"><i class="fas fa-paper-plane"></i> شحن الرصيد (فليكسي)</div>
+            <div class="nav-link"><i class="fas fa-bolt"></i> شحن سريع</div>
+            <div class="nav-link"><i class="fas fa-terminal"></i> سجل الأوامر</div>
+            <div class="nav-link" onclick="openAddModal()"><i class="fas fa-plus"></i> إضافة عقدة</div>
+            <div class="nav-link" onclick="openTgSettings()"><i class="fab fa-telegram"></i> إعدادات تيليجرام</div>
+            <div style="margin-top: auto;">
+                <div class="nav-link"><i class="fas fa-user-shield"></i> لوحة الإدارة</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-view">
+            <div class="stats-header">
+                <!-- Quick Recharge Center (The Large Box) -->
+                <div class="glass-card" style="grid-column: span 2; padding: 40px; border: 1px solid var(--primary); background: rgba(0, 210, 255, 0.05);">
+                    <h2 style="margin-bottom: 25px; color: var(--primary); text-align: center;">مركـز الشحن السـريع</h2>
+                    
+                    <div style="position: relative; margin-bottom: 30px;">
+                        <span style="position: absolute; top: -12px; right: 30px; background: #05070a; padding: 2px 15px; font-size: 0.8rem; font-weight: 700; color: var(--primary); border-radius: 10px; z-index: 10;">رقم الزبون</span>
+                        <input type="text" id="main-phone" placeholder="06XXXXXXXX" 
+                               style="width: 100%; background: rgba(255,255,255,0.05); border: 2px solid var(--glass-border); padding: 25px; border-radius: 25px; color: white; font-size: 2.5rem; font-weight: 800; text-align: center; letter-spacing: 5px; outline: none; transition: 0.3s;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <button class="btn-neon" onclick="fetchSamaOffersMain()" style="padding: 20px; font-size: 1.1rem; background: rgba(0, 210, 255, 0.1); border-color: var(--primary);">
+                            <i class="fas fa-tags"></i> عروض مفعل
+                        </button>
+                        <button class="btn-neon" onclick="handleInvoiceMain()" style="padding: 20px; font-size: 1.1rem; background: rgba(16, 185, 129, 0.1); border-color: var(--success);">
+                            <i class="fas fa-file-invoice-dollar"></i> فاتورة
+                        </button>
+                        <button class="btn-neon" onclick="loadOffersDynamically()" style="padding: 20px; font-size: 1.1rem; background: rgba(168, 85, 247, 0.1); border-color: #a855f7;">
+                            <i class="fas fa-gift" style="font-size: 2rem; margin-bottom: 10px; color: #a855f7;"></i><br>العروض
+                        </button>
+                    </div>
+
+                    <div id="main-offers-loading" style="display: none; text-align: center; color: var(--primary); margin: 20px 0;">
+                        <i class="fas fa-circle-notch fa-spin"></i> جاري جلب العروض...
+                    </div>
+
+                    <div id="main-offers-box" style="display: none; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 20px; border: 1px solid var(--glass-border); max-height: 250px; overflow-y: auto;">
+                        <div id="main-offers-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div style="color: rgba(255,255,255,0.4); font-size: 0.9rem; text-transform: uppercase;">إجمالي السيولة النقدية</div>
+                    <div id="total-balance" style="font-size: 3rem; font-weight: 900; color: var(--success);">0.00 DA</div>
+                    <div style="font-size: 0.8rem; color: var(--primary);"><i class="fas fa-sync fa-spin"></i> تحديث مباشر نشط</div>
+                </div>
+                <div class="glass-card">
+                    <div style="color: rgba(255,255,255,0.4); font-size: 0.9rem; text-transform: uppercase;">عقد الشبكة النشطة</div>
+                    <div id="online-count" style="font-size: 3rem; font-weight: 900; color: var(--primary);">0 / 0</div>
+                    <button class="btn-neon" onclick="syncAllBalances()" style="width: 100%; background: var(--accent); color: white; margin-top: 10px; font-size: 0.8rem;">
+                        <i class="fas fa-sync-alt"></i> تحديث رصيد الكل
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobilis Section -->
+            <div class="operator-section">
+                <h2 style="color: #00ff88; margin-bottom: 20px;"><i class="fas fa-signal"></i> MOBILIS</h2>
+                <div class="modem-grid" id="list-mobilis"></div>
+            </div>
+
+            <!-- Ooredoo Section -->
+            <div class="operator-section" style="margin-top: 40px;">
+                <h2 style="color: #ff0055; margin-bottom: 20px;"><i class="fas fa-signal"></i> OOREDOO</h2>
+                <div class="modem-grid" id="list-ooredoo"></div>
+            </div>
+
+            <!-- Djezzy Section -->
+            <div class="operator-section" style="margin-top: 40px;">
+                <h2 style="color: #ffb300; margin-bottom: 20px;"><i class="fas fa-signal"></i> DJEZZY</h2>
+                <div class="modem-grid" id="list-djezzy"></div>
+            </div>
+
+            <!-- SAMA Section -->
+            <div class="operator-section" style="margin-top: 40px;">
+                <h2 style="color: #a855f7; margin-bottom: 20px;"><i class="fas fa-star"></i> SAMA</h2>
+                <div class="modem-grid" id="list-sama"></div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 30px; padding: 0; overflow: hidden;">
+                <div style="padding: 20px 30px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-weight: 700; color: var(--primary);">سجل العمليات الأخير</h3>
+                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.4);">آخر 10 عمليات</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: right;">
+                        <thead style="background: rgba(255,255,255,0.02);">
+                            <tr>
+                                <th style="padding: 15px 30px; font-size: 0.8rem; color: var(--primary);">الوقت</th>
+                                <th style="padding: 15px 30px; font-size: 0.8rem; color: var(--primary);">الهدف</th>
+                                <th style="padding: 15px 30px; font-size: 0.8rem; color: var(--primary);">النوع</th>
+                                <th style="padding: 15px 30px; font-size: 0.8rem; color: var(--primary);">المبلغ</th>
+                                <th style="padding: 15px 30px; font-size: 0.8rem; color: var(--primary);">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list">
+                            <!-- Transactions via portal.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transfer-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(20px);">
+        <div class="glass-card" style="width: 480px; padding: 40px; border: 1px solid var(--primary);">
+            <h2 style="margin-bottom: 25px; color: var(--primary);">مركز الشحن الذكي</h2>
+            
+            <label style="font-size: 0.8rem; margin-bottom: 8px; display: block;">رقم الهاتف</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="flexy-phone" placeholder="06XXXXXXXX" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white;">
+                <button class="btn-neon" onclick="fetchSamaOffers()" style="width: auto; padding: 0 15px; font-size: 0.7rem; background: var(--primary); color: #000;">
+                    <i class="fas fa-magic"></i> جلب العروض
+                </button>
+            </div>
+
+            <div id="offers-loading" style="display: none; text-align: center; margin-bottom: 20px; color: var(--primary); font-size: 0.8rem;">
+                <i class="fas fa-spinner fa-spin"></i> جاري استخراج العروض من SAMA...
+            </div>
+
+            <div id="offers-box" style="display: none; margin-bottom: 20px;">
+                <label style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;">العروض المتاحة (اختر واحداً):</label>
+                <div id="offers-list" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+
+            <label style="font-size: 0.8rem; margin-bottom: 8px; display: block;">المبلغ (DA)</label>
+            <input type="number" id="flexy-amount" placeholder="0.00" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 25px;">
+            
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-neon" onclick="submitFlexy()" style="background: var(--primary); color: #000; flex: 1;">تأكيد العملية</button>
+                <button class="btn-neon" onclick="closeModals()" style="flex: 0.5;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Next-Gen -->
+    <div id="add-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(20px);">
+        <div class="glass-card" style="width: 500px; padding: 40px; border: 1px solid var(--primary);">
+            <h2 style="margin-bottom: 30px;">إضافة عقدة مودم</h2>
+            <input type="text" id="new-ip" placeholder="IP Address / COM Port" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px;">
+            <select id="new-operator" style="width: 100%; background: #0b0e14; border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 20px;">
+                <option value="Mobilis">Mobilis</option>
+                <option value="Djezzy">Djezzy</option>
+                <option value="Ooredoo">Ooredoo</option>
+                <option value="Sama">Sama</option>
+            </select>
+
+            <label style="font-size: 0.8rem;">كود PIN الخاص بالشريحة</label>
+            <input type="text" id="new-pin" placeholder="مثال: 0000" value="0000" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 20px;">
+
+            <label style="font-size: 0.8rem;">كلمة المرور (لوحة المودم)</label>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-neon" onclick="saveNewModem()" style="background: var(--primary); color: #000;">تفعيل العقدة</button>
+                <button class="btn-neon" onclick="closeModals()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Settings Modal -->
+    <div id="tg-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(20px);">
+        <div class="glass-card" style="width: 500px; padding: 40px; border: 1px solid #0088cc;">
+            <h2 style="margin-bottom: 30px; color: #0088cc;"><i class="fab fa-telegram"></i> إعدادات تيليجرام البوت</h2>
+            
+            <label style="font-size: 0.8rem;">توكن البوت (Bot Token)</label>
+            <input type="text" id="tg-token" placeholder="123456789:AAExxxxxx..." style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px;">
+            
+            <label style="font-size: 0.8rem;">معرف الأدمن (Admin Chat ID)</label>
+            <input type="text" id="tg-admin" placeholder="مثال: 6320785501" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 25px;">
+            
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-neon" onclick="saveTgSettings()" style="background: #0088cc; color: white;">حفظ وتطبيق</button>
+                <button class="btn-neon" onclick="closeModals()">إلغاء</button>
+            </div>
+            <div style="margin-top: 15px; font-size: 0.8rem; color: var(--warning); text-align: center;">ملاحظة: سيتم إعادة تشغيل البوت تلقائياً عند الحفظ</div>
+        </div>
+    </div>
+
+    <!-- SMS Modal (Black Box) -->
+    <div id="sms-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div class="glass-card" style="width: 600px; padding: 50px; border: 2px solid #00ff88; background: #000; box-shadow: 0 0 50px rgba(0, 255, 136, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h2 style="color: #00ff88; font-family: 'Cairo';"><i class="fas fa-envelope-open-text"></i> رسالة موبيليس الواردة</h2>
+                <button onclick="closeModals()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="sms-content" style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; font-size: 1.4rem; line-height: 1.6; color: #fff; text-align: center; border: 1px solid rgba(0, 255, 136, 0.3); min-height: 150px; display: flex; align-items: center; justify-content: center;">
+                <div id="sms-loader"><i class="fas fa-circle-notch fa-spin"></i> جاري انتظار الرسالة...</div>
+            </div>
+            <button class="btn-neon" onclick="closeModals()" style="margin-top: 30px; width: 100%; background: #00ff88; color: #000; font-weight: 800; font-size: 1.2rem;">إغلاق النافذة</button>
+        </div>
+    </div>
+
+    <script src="portal.js"></script>
+</body>
+</html>

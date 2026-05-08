@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLEXY PRO | بوابة الزبائن</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="customer.css">
+</head>
+<body>
+    <div class="bg-vignette"></div>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-wrapper">
+        <!-- Sidebar / Topbar -->
+        <nav class="glass-nav">
+            <div class="logo">FLEXY<span>PRO</span></div>
+            <div class="nav-links">
+                <button class="nav-item active" data-target="flexy"><i class="fas fa-bolt"></i><span>فليكسي</span></button>
+                <button class="nav-item" data-target="idoom"><i class="fas fa-wifi"></i><span>إيدوم</span></button>
+                <button class="nav-item" data-target="cards"><i class="fas fa-shopping-basket"></i><span>بطاقات</span></button>
+            </div>
+            <div class="user-info">
+                <div class="balance-pill">
+                    <i class="fas fa-wallet"></i>
+                    <span id="user-balance">0.00</span> DA
+                </div>
+            </div>
+        </nav>
+
+        <main class="content-area">
+            <!-- Flexy Section -->
+            <section id="section-flexy" class="active">
+                <div class="hero-card glass">
+                    <div class="operator-badge" id="op-badge">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span id="op-name">جاهز للخدمة</span>
+                    </div>
+                    
+                    <div class="input-container">
+                        <label for="phone-input">رقم الهاتف أو إيدوم</label>
+                        <input type="text" id="phone-input" placeholder="0XXXXXXXXX" maxlength="10">
+                    </div>
+
+                    <div class="action-grid" id="mobile-actions">
+                        <button class="btn-action primary" onclick="handleOffers()">
+                            <i class="fas fa-tags"></i>
+                            <span>العروض المتاحة</span>
+                        </button>
+                        <button class="btn-action secondary" onclick="handleInvoice()">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>دفع فاتورة</span>
+                        </button>
+                    </div>
+
+                    <div class="action-grid hidden" id="idoom-actions">
+                        <button class="btn-action primary" onclick="openIdoomModal()">
+                            <i class="fas fa-plug"></i>
+                            <span>تعبئة إيدوم</span>
+                        </button>
+                        <button class="btn-action secondary" onclick="checkIdoomStatus()">
+                            <i class="fas fa-search"></i>
+                            <span>حالة الخط</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="results-panel" class="glass hidden">
+                    <div class="panel-header">
+                        <h3 id="results-title">النتائج</h3>
+                        <button class="close-panel" onclick="hidePanel()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="results-list" class="scrollable"></div>
+                </div>
+            </section>
+
+            <!-- Cards Section -->
+            <section id="section-cards">
+                <div class="section-header">
+                    <h2>متجر البطاقات</h2>
+                    <p>اختر البطاقة التي تريد شحنها مباشرة</p>
+                </div>
+                <div class="cards-grid" id="cards-container">
+                    <!-- Cards injected by JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="loading-overlay" class="hidden">
+        <div class="loader"></div>
+        <p>جاري المعالجة...</p>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content glass">
+            <h3>تأكيد العملية</h3>
+            <p id="confirm-text"></p>
+            <div class="modal-btns">
+                <button id="btn-confirm" class="btn-confirm">تأكيد</button>
+                <button onclick="closeModal('confirm-modal')" class="btn-cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="customer.js"></script>
+    <div style="text-align: center; padding: 20px; opacity: 0.3;">
+        <a href="/admin" style="color: var(--text-dim); text-decoration: none; font-size: 0.7rem;">لوحة التحكم</a>
+    </div>
+</body>
+</html>

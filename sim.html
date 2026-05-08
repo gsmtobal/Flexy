@@ -1,0 +1,339 @@
+    <meta http-equiv="refresh" content="0; url=index.html">
+    <script>window.location.href = "index.html";</script>
+</head>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+        }
+        body { margin:0; background:var(--bg); color:#f3f4f6; font-family:'Inter', 'Segoe UI', Tahoma, sans-serif; padding:20px; direction: ltr; }
+        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; }
+        
+        /* Stats Bar */
+        .stats-bar { display:grid; grid-template-columns: repeat(4, 1fr); gap:20px; margin-bottom:30px; }
+        .stat-card { background:var(--card); padding:20px; border-radius:16px; border:1px solid rgba(255,255,255,0.05); text-align:center; }
+        .stat-card h3 { margin:0; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:1px; }
+        .stat-card .value { font-size:24px; font-weight:800; margin-top:10px; color:var(--accent); }
+
+        /* Main Grid */
+        .main-layout { display:grid; grid-template-columns: 1fr 400px; gap:30px; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:20px; }
+        
+        .sim-card { background:var(--card); border-radius:20px; border:1px solid rgba(255,255,255,0.08); padding:20px; position:relative; }
+        .status-leds { display:flex; gap:8px; margin-bottom:15px; }
+        .led { width:12px; height:12px; border-radius:50%; background:#334155; }
+        .led.red.active { background:var(--danger); box-shadow:0 0 10px var(--danger); }
+        .led.yellow.active { background:var(--warning); box-shadow:0 0 10px var(--warning); }
+        .signal-bars { display:flex; align-items:flex-end; gap:3px; height:24px; }
+        .bar.fill { background:var(--success); box-shadow: 0 0 8px var(--success); }
+
+        .balance-box { font-size:36px; font-weight:800; margin:10px 0; color:#fff; }
+        
+        /* Table Style */
+        .table-container { background:var(--card); border-radius:20px; border:1px solid rgba(255,255,255,0.08); overflow:hidden; margin-top:30px; }
+        table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+        th { background:rgba(0,0,0,0.2); padding:15px; color:#64748b; font-weight:700; }
+        td { padding:15px; border-top:1px solid rgba(255,255,255,0.05); }
+        tr:hover { background:rgba(255,255,255,0.02); }
+        .status-badge { padding:4px 8px; border-radius:6px; font-size:10px; font-weight:800; }
+
+        .btn { border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:700; transition:0.3s; display:flex; align-items:center; gap:8px; }
+        .btn-primary { background:var(--accent); color:white; width:100%; justify-content:center; }
+        
+        /* Sidebar Logs */
+        .sidebar { background:var(--card); border-radius:20px; border:1px solid rgba(255,255,255,0.08); padding:20px; height:calc(100vh - 150px); display:flex; flex-direction:column; }
+        .log-feed { flex:1; overflow-y:auto; font-family:'Fira Code', monospace; font-size:11px; color:#94a3b8; }
+        
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; }
+        .modal-content { background:#1e293b; padding:30px; border-radius:24px; width:450px; border:1px solid var(--accent); }
+        input, select { width:100%; padding:12px; margin:10px 0; background:#0f172a; border:1px solid #334155; color:white; border-radius:12px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div>
+            <h1 style="margin:0; font-size:28px; font-weight:800;">FLEXY MASTER PRO <span style="color:var(--accent)">v6</span></h1>
+            <small style="color:#64748b">Système avancé de gestion de modems et rapports de transfert</small>
+        </div>
+        <button class="btn btn-primary" style="width:auto; background:var(--success)" onclick="openAddModal()"><i class="fas fa-plus"></i> AJOUTER MODEM</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-card"><h3>TOTAL DU JOUR</h3><div class="value" id="totDay">0.00 DA</div></div>
+        <div class="stat-card"><h3>MODEMS ACTIFS</h3><div class="value" id="activeCount">0</div></div>
+        <div class="stat-card"><h3>TAUX DE RÉUSSITE</h3><div class="value" style="color:var(--success)">100%</div></div>
+        <div class="stat-card"><h3>ÉTAT SYSTÈME</h3><div class="value" style="color:var(--success)">STABLE</div></div>
+    </div>
+
+    <div class="main-layout">
+        <div class="content-area">
+            <div id="modemGrid" class="grid"></div>
+
+            <div class="table-container">
+                <div style="padding:20px; background:rgba(0,0,0,0.1); font-weight:800; display:flex; justify-content:space-between">
+                    <span>OPÉRATIONS RÉCENTES</span>
+                    <span style="color:var(--accent)">LIVE UPDATE <i class="fas fa-circle-notch fa-spin"></i></span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>HEURE</th>
+                            <th>MODEM</th>
+                            <th>OPÉRATION</th>
+                            <th>RÉPONSE / DONNÉES</th>
+                            <th>STATUT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <!-- Premium Telegram Panel -->
+            <div style="background:linear-gradient(145deg, #1e293b, #0f172a); padding:20px; border-radius:24px; margin-bottom:25px; border:1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; font-size:16px; color:#3b82f6; display:flex; align-items:center; gap:10px;">
+                        <i class="fab fa-telegram" style="font-size:20px;"></i> CONTROL CENTER
+                    </h3>
+                    <div id="tgStatus" class="led" style="width:12px; height:12px; background:#334155; border-radius:50%;"></div>
+                </div>
+                
+                <div style="font-size:11px; color:#64748b; margin-bottom:15px;">Configurez votre Bot pour recevoir des alertes en direct et contrôler les modems.</div>
+                
+                <label style="font-size:10px; font-weight:800; color:#94a3b8; display:block; margin-bottom:5px;">BOT TOKEN</label>
+                <input type="password" id="tgToken" placeholder="123456789:ABCDEF..." style="font-size:12px; padding:10px; border:1px solid rgba(255,255,255,0.1);">
+                
+                <label style="font-size:10px; font-weight:800; color:#94a3b8; display:block; margin-bottom:5px; margin-top:10px;">ADMIN CHAT ID</label>
+                <input type="text" id="tgChatId" placeholder="Votre ID Telegram" style="font-size:12px; padding:10px; border:1px solid rgba(255,255,255,0.1);">
+                
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="btn btn-primary" style="flex:2; background:#3b82f6;" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> SAVE
+                    </button>
+                    <button class="btn" style="flex:1; background:rgba(255,255,255,0.05); color:white;" onclick="testBot()">
+                        <i class="fas fa-paper-plane"></i> TEST
+                    </button>
+                </div>
+            </div>
+
+            <h3 style="margin:0 0 20px 0; font-size:14px; color:var(--accent)">LOG ÉVÉNEMENTS MATÉRIEL</h3>
+            <div id="logFeed" class="log-feed"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="mModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Enregistrer Nouveau Matériel</h2>
+            <label>Opérateur</label>
+            <select id="mOp"><option>Mobilis</option><option>Ooredoo</option><option>Djezzy</option><option>Sama</option></select>
+            <label>Type de Connexion</label>
+            <select id="mType" onchange="updatePortList()"><option value="com">Série (COM)</option><option value="hilink">HiLink (IP)</option></select>
+            <label>Port Principal (USSD/Signal)</label>
+            <div style="display:flex; gap:10px;">
+                <select id="mPortSelect" style="flex:1" onchange="document.getElementById('mPortVal').value=this.value"></select>
+                <button class="btn" style="background:#0f172a; width:auto;" onclick="updatePortList()"><i class="fas fa-search"></i></button>
+            </div>
+            <input type="text" id="mPortVal" placeholder="Nom du port manuel">
+
+            <label>Port SMS (Secondaire - Optionnel)</label>
+            <div style="display:flex; gap:10px;">
+                <select id="mSmsPortSelect" style="flex:1" onchange="document.getElementById('mSmsPortVal').value=this.value"></select>
+            </div>
+            <input type="text" id="mSmsPortVal" placeholder="Port SMS optionnel">
+
+            <input type="text" id="mPin" placeholder="Code PIN pour USSD">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="flex:1; background:#334155; color:white;" onclick="closeModal()">ANNULER</button>
+                <button class="btn btn-primary" style="flex:2" onclick="saveSim()">SAUVEGARDER</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function refresh() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            
+            // Stats
+            document.getElementById('activeCount').innerText = data.modems.filter(m=>m.online).length;
+            
+            // Grid
+            document.getElementById('modemGrid').innerHTML = data.modems.map(m => {
+                const key = m.port || m.ip;
+                const sig = Math.ceil(m.signal / 20);
+                return `
+                    <div class="sim-card">
+                        <div class="status-leds">
+                            <div class="led red ${!m.online?'active':''}"></div>
+                            <div class="led yellow ${m.online&&m.signal<20?'active':''}"></div>
+                            <div class="led green ${m.online&&m.signal>=20?'active':''}"></div>
+                            
+                            <!-- Antenna Icon -->
+                            <div style="margin-right:0; margin-left:auto; display:flex; align-items:center; gap:10px;">
+                                <div style="font-size:10px; color:#64748b; font-weight:bold;">${m.signal}%</div>
+                                <div class="signal-bars">
+                                    ${[1,2,3,4,5].map(i => `<div class="bar ${sig>=i?'fill':''}" style="height:${i*4}px; width:3px; background:rgba(255,255,255,0.1); border-radius:1px;"></div>`).join('')}
+                                    <i class="fas fa-broadcast-tower" style="font-size:12px; color:${m.signal>0?'var(--success)':'#334155'}; margin-left:5px;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-size:12px; font-weight:800; color:var(--accent)">${m.operator.toUpperCase()}</div>
+                            <div style="font-size:10px; background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; color:#64748b;">
+                                <i class="fas ${m.type==='hilink'?'fa-globe':'fa-plug'}"></i> ${m.type==='hilink'?'HILINK':'SERIAL'}
+                            </div>
+                        </div>
+                        <div class="balance-box">${m.balance} <small style="font-size:14px;color:#4b5563">DA</small></div>
+                        
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:10px; color:#64748b; font-weight:bold;">Code USSD :</label>
+                            <input type="text" id="code_${m.id}" value="${m.operator==='Ooredoo'?'*200*0000#':(m.operator==='Sama'?'*222#':(m.operator==='Mobilis'?'*632*01*00000#':'*222#'))}" style="margin:0; padding:5px; font-size:12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); color:var(--accent); font-weight:bold;">
+                        </div>
+
+                        <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.1); border-radius:12px; padding:10px; margin-bottom:15px; font-size:11px;">
+                            <small style="color:var(--accent); font-weight:bold; display:block; margin-bottom:5px;">DERNIER MESSAGE :</small>
+                            <span style="color:#00d2ff">${m.lastSms || 'Aucun message reçu...'}</span>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="check('${m.port}','${m.ip}','${m.type}', this, ${m.id})">
+                            <i class="fas fa-sync-alt"></i> VÉRIFIER SOLDE
+                        </button>
+                        
+                        <div style="margin-top:10px; display:flex; gap:5px;">
+                            <input type="text" id="at_${m.id}" placeholder="Commande AT..." style="margin:0; padding:8px; font-size:10px; flex:1">
+                            <button class="btn" style="padding:8px; background:var(--accent); width:auto; font-size:10px" onclick="sendManual('${key}',${m.id})">ENVOYER</button>
+                        </div>
+
+                        <div style="margin-top:10px; display:flex; gap:5px;">
+                            <button class="btn" style="flex:1; font-size:10px; background:rgba(255,255,255,0.05); color:white;" onclick="deleteSim(${m.id})">SUPPRIMER</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Transactions Table
+            document.getElementById('transTable').innerHTML = data.logs.slice(0,15).map(l => `
+                <tr>
+                    <td>${l.time}</td>
+                    <td style="color:var(--accent)">${l.port}</td>
+                    <td>${l.type}</td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.response}</td>
+                    <td><span class="status-badge" style="background:${l.status==='OK'?'var(--success)':'var(--danger)'}33; color:${l.status==='OK'?'var(--success)':'var(--danger)'}">${l.status}</span></td>
+                </tr>
+            `).join('');
+
+            // Log Feed
+            document.getElementById('logFeed').innerHTML = data.logs.map(l => `> [${l.time}] [${l.port}] ${l.type}: ${l.status} - ${l.response || ''}`).join('<br>');
+        }
+
+        async function loadSettings() {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            document.getElementById('tgToken').value = data.tgToken || '';
+            document.getElementById('tgChatId').value = data.tgChatId || '';
+            const led = document.getElementById('tgStatus');
+            if (data.botStatus) {
+                led.classList.add('active', 'green');
+                led.style.background = 'var(--success)';
+                led.style.boxShadow = '0 0 10px var(--success)';
+            } else {
+                led.style.background = '#334155';
+                led.style.boxShadow = 'none';
+            }
+        }
+
+        async function saveSettings() {
+            const tgToken = document.getElementById('tgToken').value;
+            const tgChatId = document.getElementById('tgChatId').value;
+            const res = await fetch('/api/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tgToken, tgChatId })
+            });
+            if (res.ok) {
+                loadSettings();
+                alert('Paramètres enregistrés et Bot redémarré !');
+            }
+        }
+
+        async function testBot() {
+            const res = await fetch('/api/settings/test', { method: 'POST' });
+            if (res.ok) alert('Signal de test envoyé ! Vérifiez Telegram.');
+            else alert('Échec de l\'envoi. Vérifiez le Token et l\'ID.');
+        }
+
+        async function check(port, ip, type, btn, id) {
+            const customCode = document.getElementById('code_' + id).value;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            await fetch('/api/modems/check-balance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port, ip, type, customCode })
+            });
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-sync-alt"></i> VÉRIFIER SOLDE'; refresh(); }, 2000);
+        }
+
+        async function sendManual(key, id) {
+            const cmd = document.getElementById('at_' + id).value;
+            if(!cmd) return;
+            await fetch('/api/modems/command', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, command: cmd })
+            });
+            document.getElementById('at_' + id).value = '';
+            setTimeout(refresh, 1000);
+        }
+
+        async function deleteSim(id) {
+            if(!confirm("Supprimer ?")) return;
+            await fetch('/api/modems/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+            refresh();
+        }
+
+        async function updatePortList() {
+            const type = document.getElementById('mType').value;
+            const sel = document.getElementById('mPortSelect');
+            sel.innerHTML = '<option>Scannage en cours...</option>';
+            
+            const res = await fetch('/api/modems/scan');
+            const data = await res.json();
+            
+            // Filter based on selected type
+            const filtered = data.ports.filter(p => p.type === type);
+            
+            if (filtered.length === 0) {
+                sel.innerHTML = `<option value="">Aucun modem ${type} trouvé</option>`;
+            } else {
+                sel.innerHTML = filtered.map(p => `<option value="${p.path}">${p.path} (${p.info || 'Modem'})</option>`).join('');
+            }
+            
+            document.getElementById('mSmsPortSelect').innerHTML = '<option value="">Aucun</option>' + 
+                data.ports.filter(p => p.type === 'com').map(p => `<option value="${p.path}">${p.path}</option>`).join('');
+            
+            if (filtered.length > 0) document.getElementById('mPortVal').value = filtered[0].path;
+        }
+
+        async function saveSim() {
+            const m = {
+                operator: document.getElementById('mOp').value,
+                type: document.getElementById('mType').value,
+                port: document.getElementById('mPortVal').value,
+                smsPort: document.getElementById('mSmsPortVal').value,
+                ip: document.getElementById('mPortVal').value,
+                pin: document.getElementById('mPin').value
+            };
+            await fetch('/api/modems/add', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(m)
+            });
+            closeModal();
+            refresh();
+        }
+
+        function openAddModal() { document.getElementById('mModal').style.display='flex'; updatePortList(); }
+        function closeModal() { document.getElementById('mModal').style.display='none'; }
+
+        setInterval(refresh, 3000);
+        refresh();
+        loadSettings();
+    </script>
+</body>
+</html>
