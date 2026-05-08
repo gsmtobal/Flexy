@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة العميل - FLEXY</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 12px 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .content {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .offers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .offer-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .offer-card:hover {
+            transform: translateY(-5px);
+            border-color: white;
+        }
+
+        .offer-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .offer-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .stock-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: auto;
+            color: #999;
+            margin: 0;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+
+        .balance-info {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .balance-info h3 {
+            margin-bottom: 10px;
+        }
+
+        .balance-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bolt"></i> FLEXY PRO</h1>
+            <p>بوابة العميل - شحن الرصيد والخدمات</p>
+        </div>
+
+        <div class="balance-info">
+            <h3>رصيدك الحالي</h3>
+            <div class="balance-value" id="customer-balance">0.00 DA</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('flexy')">
+                <i class="fas fa-zap"></i> شحن فليكسي
+            </button>
+            <button class="tab-btn" onclick="switchTab('idoom')">
+                <i class="fas fa-wifi"></i> خدمات IDOOM
+            </button>
+            <button class="tab-btn" onclick="switchTab('cards')">
+                <i class="fas fa-credit-card"></i> القسائم
+            </button>
+        </div>
+
+        <!-- TAB 1: FLEXY RECHARGE -->
+        <div id="flexy" class="content active">
+            <div class="card">
+                <h2><i class="fas fa-zap"></i> شحن الرصيد الفليكسي</h2>
+                <div class="success" id="flexy-success"></div>
+                <div class="error" id="flexy-error"></div>
+                
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> أدخل رقم الهاتف والمبلغ المراد شحنه</p>
+                </div>
+
+                <form onsubmit="submitFlexy(event)">
+                    <div class="form-group">
+                        <label>رقم الهاتف *</label>
+                        <input type="tel" id="flexy-phone" placeholder="06XXXXXXXX" required 
+                               pattern="^(06|05|07)\d{8}$" maxlength="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label>المبلغ (DA) *</label>
+                        <input type="number" id="flexy-amount" placeholder="0.00" min="10" max="5000" 
+                               step="10" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ملاحظات (اختيارية)</label>
+                        <input type="text" id="flexy-notes" placeholder="أضف ملاحظة...">
+                    </div>
+
+                    <div class="loading" id="flexy-loading">
+                        <i class="fas fa-circle-notch"></i>
+                        <p>جاري معالجة الشحن...</p>
+                    </div>
+
+                    <button type="submit">تأكيد الشحن</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: IDOOM SERVICES -->
+        <div id="idoom" class="content">
+            <div class="card">
+                <h2><i class="fas fa-wifi"></i> خدمات IDOOM</h2>
+                <div class="success" id="idoom-success"></div>
+                <div class="error" id="idoom-error"></div>
+
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> اختر عرضاً واشتري قسيمة إعادة شحن</p>
+                </div>
+
+                <div class="form-group">
+                    <label>رقم IDOOM *</label>
+                    <input type="tel" id="idoom-phone" placeholder="0XXXXXXXXX" required 
+                           pattern="^0\d{8}$" maxlength="9">
+                </div>
+
+                <div class="loading" id="idoom-loading">
+                    <i class="fas fa-circle-notch"></i>
+                    <p>جاري تحميل العروض...</p>
+                </div>
+
+                <div id="idoom-offers-container" style="display: none;">
+                    <label>اختر عرضاً:</label>
+                    <div class="offers-grid" id="idoom-offers"></div>
+                </div>
+
+                <button type="button" onclick="loadIdoomOffers()" style="margin-top: 20px;">
+                    تحميل العروض المتاحة
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 3: CARDS -->
+        <div id="cards" class="content">
+            <div class="card">
+                <h2><i class="fas fa-credit-card"></i> بيع القسائم</h2>
+                <div class="success" id="cards-success"></div>
+                <div class="error" id="cards-error"></div>
+
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> اختر المنتج وسيتم خصم السعر من رصيدك</p>
+                </div>
+
+                <div class="loading" id="cards-loading">
+                    <i class="fas fa-circle-notch"></i>
+                    <p>جاري تحميل القسائم المتاحة...</p>
+                </div>
+
+                <div id="cards-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR CARD DETAILS -->
+    <div id="card-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+            <button onclick="confirmBuyCard()">تأكيد الشراء</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 FLEXY Server - جميع الحقوق محفوظة</p>
+        <p>للدعم الفني: <a href="https://t.me/support" style="color: white;">تواصل معنا</a></p>
+    </footer>
+
+    <script>
+        let customerBalance = 0;
+        let selectedProduct = null;
+
+        // Load customer balance on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCustomerBalance();
+            loadCards();
+        });
+
+        function switchTab(tab) {
+            // Hide all contents
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            // Show selected tab
+            document.getElementById(tab).classList.add('active');
+            
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showMessage(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.classList.add('show');
+            if (isError) {
+                el.style.background = '#f8d7da';
+                el.style.color = '#721c24';
+            } else {
+                el.style.background = '#d4edda';
+                el.style.color = '#155724';
+            }
+            setTimeout(() => {
+                el.classList.remove('show');
+            }, 5000);
+        }
+
+        function showLoading(elementId, show = true) {
+            const el = document.getElementById(elementId);
+            if (show) {
+                el.classList.add('show');
+            } else {
+                el.classList.remove('show');
+            }
+        }
+
+        // ============ FLEXY RECHARGE ============
+        async function submitFlexy(e) {
+            e.preventDefault();
+            const phone = document.getElementById('flexy-phone').value;
+            const amount = document.getElementById('flexy-amount').value;
+
+            if (!phone || !amount) {
+                showMessage('flexy-error', 'يرجى ملء جميع الحقول المطلوبة', true);
+                return;
+            }
+
+            showLoading('flexy-loading', true);
+
+            try {
+                const res = await fetch('/api/portal/flexy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, amount })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage('flexy-success', `✅ تم إرسال شحن ${amount} DA للرقم ${phone} بنجاح!`);
+                    document.getElementById('flexy-phone').value = '';
+                    document.getElementById('flexy-amount').value = '';
+                    loadCustomerBalance();
+                } else {
+                    showMessage('flexy-error', `❌ خطأ: ${data.error || 'فشل الشحن'}`, true);
+                }
+            } catch (e) {
+                showMessage('flexy-error', `❌ خطأ في الاتصال: ${e.message}`, true);
+            } finally {
+                showLoading('flexy-loading', false);
+            }
+        }
+
+        // ============ IDOOM SERVICES ============
+        async function loadIdoomOffers() {
+            const phone = document.getElementById('idoom-phone').value;
+            if (!phone) {
+                showMessage('idoom-error', 'يرجى إدخال رقم IDOOM', true);
+                return;
+            }
+
+            showLoading('idoom-loading', true);
+
+            try {
+                const res = await fetch('/api/sama/offers-list');
+                const offers = await res.json();
+
+                const container = document.getElementById('idoom-offers');
+                container.innerHTML = offers.map(offer => `
+                    <div class="offer-card" onclick="selectIdoomOffer('${offer.id}', '${offer.name}', ${offer.amount})">
+                        <h3>${offer.amount} DA</h3>
+                        <p>${offer.name}</p>
+                        <span class="stock-badge">متاح</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('idoom-offers-container').style.display = 'block';
+            } catch (e) {
+                showMessage('idoom-error', `❌ خطأ في تحميل العروض: ${e.message}`, true);
+            } finally {
+                showLoading('idoom-loading', false);
+            }
+        }
+
+        function selectIdoomOffer(offerId, offerName, amount) {
+            const phone = document.getElementById('idoom-phone').value;
+            if (!phone) {
+                showMessage('idoom-error', 'يرجى إدخال رقم IDOOM أولاً', true);
+                return;
+            }
+
+            submitIdoomRecharge(phone, offerId, offerName, amount);
+        }
+
+        async function submitIdoomRecharge(phone, offerId, offerName, amount) {
+            showLoading('idoom-loading', true);
+
+            try {
+                const res = await fetch('/api/sama/recharge-offer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, offerId })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage('idoom-success', `✅ تم طلب عرض ${offerName} للرقم ${phone}. سيتم المعالجة خلال لحظات...`);
+                    document.getElementById('idoom-phone').value = '';
+                    loadCustomerBalance();
+                } else {
+                    showMessage('idoom-error', `❌ خطأ: ${data.error || 'فشل الطلب'}`, true);
+                }
+            } catch (e) {
+                showMessage('idoom-error', `❌ خطأ في الاتصال: ${e.message}`, true);
+            } finally {
+                showLoading('idoom-loading', false);
+            }
+        }
+
+        // ============ CARDS ============
+        async function loadCards() {
+            showLoading('cards-loading', true);
+
+            try {
+                const res = await fetch('/api/customer/products');
+                const products = await res.json();
+
+                const container = document.getElementById('cards-container');
+                if (products.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">لا توجد قسائم متاحة حالياً</p>';
+                    showLoading('cards-loading', false);
+                    return;
+                }
+
+                container.innerHTML = '<div class="offers-grid">' + products.map(p => `
+                    <div class="offer-card" onclick="openCardModal('${p.id}', '${p.name}', ${p.price}, ${p.stock})">
+                        <h3>${p.name}</h3>
+                        <p>${p.price} DA</p>
+                        <span class="stock-badge">${p.stock} متاح</span>
+                    </div>
+                `).join('') + '</div>';
+            } catch (e) {
+                showMessage('cards-error', `❌ خطأ في تحميل القسائم: ${e.message}`, true);
+            } finally {
+                showLoading('cards-loading', false);
+            }
+        }
+
+        function openCardModal(productId, name, price, stock) {
+            if (stock === 0) {
+                showMessage('cards-error', '❌ هذا المنتج غير متاح حالياً', true);
+                return;
+            }
+
+            selectedProduct = { id: productId, name, price };
+            document.getElementById('modal-title').textContent = `شراء: ${name}`;
+            document.getElementById('modal-body').innerHTML = `
+                <p><strong>السعر:</strong> ${price} DA</p>
+                <p><strong>الرصيد الحالي:</strong> ${customerBalance} DA</p>
+                ${customerBalance < price ? '<p style="color: #d32f2f;"><strong>⚠️ رصيد غير كافي!</strong></p>' : ''}
+            `;
+            document.getElementById('card-modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('card-modal').classList.remove('show');
+        }
+
+        async function confirmBuyCard() {
+            if (!selectedProduct) return;
+
+            if (customerBalance < selectedProduct.price) {
+                showMessage('cards-error', '❌ رصيدك غير كافي لشراء هذا المنتج', true);
+                return;
+            }
+
+            closeModal();
+            showLoading('cards-loading', true);
+
+            try {
+                const res = await fetch('/api/cards/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId: selectedProduct.id })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage('cards-success', `✅ تم شراء ${selectedProduct.name} بنجاح!\nالكود: ${data.code}`);
+                    loadCards();
+                    loadCustomerBalance();
+                } else {
+                    showMessage('cards-error', `❌ خطأ: ${data.error || 'فشل الشراء'}`, true);
+                }
+            } catch (e) {
+                showMessage('cards-error', `❌ خطأ في الاتصال: ${e.message}`, true);
+            } finally {
+                showLoading('cards-loading', false);
+            }
+        }
+
+        // ============ BALANCE ============
+        async function loadCustomerBalance() {
+            try {
+                const res = await fetch('/api/customer/balance');
+                const data = await res.json();
+                customerBalance = data.balance || 0;
+                document.getElementById('customer-balance').textContent = customerBalance.toFixed(2) + ' DA';
+            } catch (e) {
+                console.error('Error loading balance:', e);
+            }
+        }
+
+        // Reload balance every 30 seconds
+        setInterval(loadCustomerBalance, 30000);
+    </script>
+</body>
+</html>
