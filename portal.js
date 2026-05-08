@@ -11,10 +11,23 @@ function getApiUrl(path) {
     return base + p;
 }
 
+function updateConnectionStatus(connected) {
+    const el = document.getElementById('connection-status');
+    if (!el) return;
+    if (connected) {
+        el.style.color = 'var(--success)';
+        el.innerHTML = '<i class="fas fa-circle"></i> متصل بالسيرفر';
+    } else {
+        el.style.color = 'var(--danger)';
+        el.innerHTML = '<i class="fas fa-circle"></i> غير متصل بالسيرفر';
+    }
+}
+
 async function fetchData() {
     try {
         const res = await fetch(getApiUrl('/api/stats'));
         const data = await res.json();
+        updateConnectionStatus(true);
         document.getElementById('total-balance').innerText = data.totalBalance + ' DA';
         document.getElementById('online-count').innerText = `${data.onlineCount} / ${data.modems.length}`;
         renderModems(data.modems);
@@ -27,7 +40,10 @@ async function fetchData() {
                 showSmsPopup(m.operator, m.lastSms.text);
             }
         });
-    } catch (e) { console.error('Sync Error:', e); }
+    } catch (e) { 
+        console.error('Sync Error:', e);
+        updateConnectionStatus(false);
+    }
 }
 
 function showSmsPopup(operator, text) {
