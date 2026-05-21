@@ -744,6 +744,8 @@ function handleFileSelect(input) {
     reader.readAsText(file);
 }
 
+
+
 // --- Modem Operations consolidated at the top ---
 
 async function deleteModem(key) {
@@ -759,48 +761,13 @@ async function deleteModem(key) {
 }
 
 // --- Idoom Live Monitor ---
-function pollIdoomLive() {
-    const img = document.getElementById('idoom-live-img');
-    const placeholder = document.getElementById('idoom-live-placeholder');
-    const statusLabel = document.getElementById('idoom-status-label');
-    
-    if (!img) return;
 
-    // Cache-busting URL
-    const timestamp = new Date().getTime();
-    const newSrc = `/data/idoom_live.png?t=${timestamp}`;
-    
-    // Check if image exists before showing
-    const temp = new Image();
-    temp.onload = () => {
-        img.src = newSrc;
-        img.style.display = 'block';
-        if (placeholder) placeholder.style.display = 'none';
-        if (statusLabel) {
-            statusLabel.innerText = 'Active';
-            statusLabel.style.background = '#059669'; // Green
-        }
-    };
-    temp.onerror = () => {
-        // If image doesn't exist, it means no active operation or cleaned up
-        if (placeholder && placeholder.style.display === 'none') {
-            img.style.display = 'none';
-            placeholder.style.display = 'block';
-            if (statusLabel) {
-                statusLabel.innerText = 'Idle';
-                statusLabel.style.background = '#1e293b';
-            }
-        }
-    };
-    temp.src = newSrc;
-}
 
 // Initial Load
 fetchStats();
 fetchClients();
 fetchProducts();
 setupModemListeners();
-setInterval(pollIdoomLive, 2000); // Poll every 2 seconds
 async function diagnoseModem(key) {
     const modal = document.getElementById('diagnose-modal');
     const body = document.getElementById('diagnose-body');
