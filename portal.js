@@ -1,5 +1,11 @@
 console.log('🚀 Next-Gen Portal Loaded');
 let API_BASE = localStorage.getItem('api_base') || '';
+
+// Auto-fallback for file:// protocol if API_BASE is empty
+if (!API_BASE && window.location.protocol === 'file:') {
+    API_BASE = 'http://127.0.0.1:3005';
+}
+
 let lastSeenSmsTime = Date.now();
 
 function getApiUrl(path) {
@@ -10,6 +16,32 @@ function getApiUrl(path) {
     const p = path.startsWith('/') ? path : '/' + path;
     return base + p;
 }
+
+// Global fetch override to inject ADMIN_KEY
+const originalFetch = window.fetch;
+window.fetch = async function() {
+    let [resource, config] = arguments;
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    
+    // Convert Headers object or array to plain object for easier injection
+    let newHeaders = {};
+    if (config.headers instanceof Headers) {
+        config.headers.forEach((value, key) => newHeaders[key] = value);
+    } else if (Array.isArray(config.headers)) {
+        config.headers.forEach(([key, value]) => newHeaders[key] = value);
+    } else {
+        newHeaders = { ...config.headers };
+    }
+    
+    // Inject Authorization header if ADMIN_KEY exists
+    if (typeof ADMIN_KEY !== 'undefined' && ADMIN_KEY) {
+        newHeaders['Authorization'] = ADMIN_KEY;
+    }
+    
+    config.headers = newHeaders;
+    return originalFetch(resource, config);
+};
 
 function updateConnectionStatus(connected) {
     const el = document.getElementById('connection-status');
@@ -354,13 +386,13 @@ async function submitFlexy() {
     const amount = document.getElementById('flexy-amount').value;
     if (!phone || !amount) return alert('يرجى إدخال البيانات');
     try {
-        const res = await fetch(getApiUrl('/api/flexy/send'), {
+        const res = await fetch(getApiUrl('/api/portal/flexy'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, amount })
         });
         const data = await res.json();
-        if (data.success) alert('تم الإرسال'); else alert('خطأ: ' + data.error);
+        if (data.success) alert('تم الإرسال: ' + (data.message || 'نجاح')); else alert('خطأ: ' + data.error);
     } finally { closeModals(); fetchData(); }
 }
 
@@ -375,186 +407,215 @@ async function deleteModem(key) {
     }
 }
 
+// --- IDOOM LOGIC ---
+function openIdoomModal(type) {
+    document.getElementById('idoom-type').value = type;
+    document.getElementById('idoom-title').innerText = type === 'adsl' ? 'شحن Idoom ADSL' : 'شحن Idoom 4G';
+    document.getElementById('idoom-modal').style.display = 'flex';
+}
+
+async function submitIdoom() {
+    const type = document.getElementById('idoom-type').value;
+    const account = document.getElementById('idoom-phone').value;
+    const pin = document.getElementById('idoom-pin').value;
+    
+    if (!account || !pin) return alert('يرجى إدخال رقم الهاتف الثابت وكود التعبئة');
+    
+    const btn = document.querySelector('#idoom-modal button:first-of-type');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الشحن...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(getApiUrl('/recharge-idoom'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account, pin, type })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('تم شحن Idoom بنجاح!');
+        } else {
+            alert('فشل شحن Idoom: ' + (data.error || 'خطأ غير معروف'));
+        }
+    } catch (e) {
+        alert('حدث خطأ في الاتصال بالسيرفر: ' + e.message);
+    } finally {
+        btn.innerHTML = 'شحن الرصيد';
+        btn.disabled = false;
+        closeModals();
+    }
+}
 
 // --- NEW MAIN RECHARGE CENTER LOGIC ---
-async function fetchSamaOffersMain() {
-    const phone = document.getElementById('main-phone').value;
-    if (!phone || phone.length < 10) return alert('يرجى إدخال رقم صحيح أولاً');
+function attachPhoneListener() {
+    const mainPhoneInput = document.getElementById('main-phone');
+    if (mainPhoneInput) {
+        mainPhoneInput.addEventListener('input', async (e) => {
+            const phone = e.target.value.trim();
+            const box = document.getElementById('main-offers-box');
+            const list = document.getElementById('main-offers-list');
+            const title = document.getElementById('dynamic-box-title');
+            
+            // Auto detect Idoom ADSL (02, 03, 04) or Idoom 4G (213...)
+            const isAdsl = phone.length >= 9 && (phone.startsWith('02') || phone.startsWith('03') || phone.startsWith('04') || phone.startsWith('09'));
+            const is4g = phone.length >= 11 && phone.startsWith('213');
+            
+            if (isAdsl || is4g) {
+                title.innerText = 'بطاقات Idoom المتوفرة';
+                list.innerHTML = '<div style="color:var(--primary);"><i class="fas fa-spinner fa-spin"></i> جاري جلب البطاقات...</div>';
+                box.style.display = 'block';
+                
+                try {
+                    const res = await fetch(getApiUrl('/api/cards/available'));
+                    const data = await res.json();
+                    list.innerHTML = '';
+                    
+                    if (data.success && data.cards && data.cards.length > 0) {
+                        data.cards.forEach(card => {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn-neon';
+                            btn.style.fontSize = '0.9rem';
+                            btn.style.background = 'rgba(255, 153, 0, 0.1)';
+                            btn.style.borderColor = '#ff9900';
+                            btn.innerHTML = `<i class="fas fa-wifi"></i> بطاقة ${card.value} DA`;
+                            btn.onclick = () => rechargeIdoomCardDirect(phone, card.pin_code, is4g ? '4g' : 'adsl');
+                            list.appendChild(btn);
+                        });
+                    } else {
+                        list.innerHTML = '<div style="color:var(--warning);">لا توجد بطاقات Idoom متوفرة في المخزون.</div>';
+                    }
+                } catch (err) {
+                    list.innerHTML = '<div style="color:var(--danger);">خطأ في جلب البطاقات.</div>';
+                }
+            } else {
+                // Not an idoom number, hide if it was showing cards
+                if (title && title.innerText.includes('Idoom')) {
+                    box.style.display = 'none';
+                    list.innerHTML = '';
+                }
+            }
+        });
+    }
+}
+attachPhoneListener();
+
+async function rechargeIdoomCardDirect(account, pin, type) {
+    if (!confirm(`هل أنت متأكد من شحن الرقم ${account} بهذه البطاقة؟`)) return;
+    
+    document.getElementById('main-offers-list').innerHTML = '<div style="color:var(--primary);"><i class="fas fa-spinner fa-spin"></i> جاري الشحن...</div>';
+    
+    try {
+        const res = await fetch(getApiUrl('/recharge-idoom'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account, pin, type })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('تم شحن Idoom بنجاح!');
+            document.getElementById('main-offers-box').style.display = 'none';
+            document.getElementById('main-phone').value = '';
+        } else {
+            alert('فشل شحن Idoom: ' + (data.error || 'خطأ غير معروف'));
+            document.getElementById('main-offers-box').style.display = 'none';
+        }
+    } catch (e) {
+        alert('حدث خطأ في الاتصال بالسيرفر: ' + e.message);
+    }
+}
+
+async function submitFlexyMainDirect() {
+    const phone = document.getElementById('main-phone').value.trim();
+    const amount = document.getElementById('main-amount').value.trim();
+    if (!phone || !amount) return alert('يرجى إدخال الرقم والمبلغ أولاً');
+    
+    submitFlexyMain(phone, amount);
+}
+
+async function loadOffersDynamically() {
+    const phone = document.getElementById('main-phone').value.trim();
+    if (!phone || phone.length < 10) return alert('يرجى إدخال رقم هاتف صحيح أولاً');
 
     const loading = document.getElementById('main-offers-loading');
     const box = document.getElementById('main-offers-box');
     const list = document.getElementById('main-offers-list');
+    const title = document.getElementById('dynamic-box-title');
 
+    let opName = 'مجهول';
+    let opPath = '';
+    if (phone.startsWith('05')) { opName = 'أوريدو (Ooredoo)'; opPath = 'ooredoo'; }
+    else if (phone.startsWith('06')) { opName = 'موبيليس (Mobilis)'; opPath = 'mobilis'; }
+    else if (phone.startsWith('07')) { opName = 'جازي (Djezzy)'; opPath = 'djezzy'; }
+    else return alert('الرقم المدخل ليس رقم هاتف نقال صالح للجزائر.');
+
+    title.innerText = `عروض ${opName}`;
     loading.style.display = 'block';
     box.style.display = 'none';
     list.innerHTML = '';
 
     try {
-        const res = await fetch(getApiUrl('/api/sama/offers'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone })
-        });
-        const data = await res.json();
+        const res = await fetch(getApiUrl(`/api/offers/${opPath}`));
+        const offers = await res.json();
+        loading.style.display = 'none';
+        box.style.display = 'block';
         
-        if (data.success && data.content) {
-            loading.style.display = 'none';
-            box.style.display = 'block';
-            const lines = data.content.split('\n');
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed.length < 3) return;
+        if (!offers || offers.length === 0) {
+            list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--warning);">لا توجد عروض مسجلة لهذا المتعامل.</div>';
+            return;
+        }
+
+        offers.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-neon';
+            btn.style.fontSize = '0.9rem';
+            btn.style.padding = '12px';
+            btn.style.display = 'flex';
+            btn.style.flexDirection = 'column';
+            btn.style.alignItems = 'center';
+            btn.style.gap = '8px';
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            
+            btn.innerHTML = `
+                <i class="fas fa-gift" style="font-size: 1.5rem; color: var(--accent);"></i>
+                <span style="font-size: 0.85rem; font-weight: bold;">${o.name}</span>
+                <small style="color: var(--success); font-weight: 800; font-size: 0.9rem;">${o.amount} DA</small>
+            `;
+            
+            btn.onclick = async () => {
+                if (!confirm(`هل أنت متأكد من تفعيل العرض ${o.name} للرقم ${phone}؟`)) return;
                 
-                const btn = document.createElement('button');
-                btn.className = 'btn-neon';
-                btn.style.fontSize = '0.8rem';
-                btn.innerHTML = `<i class="fas fa-tag"></i> ${trimmed}`;
-                btn.onclick = () => {
-                    const valMatch = trimmed.match(/(\d{2,4})/);
-                    if (valMatch && confirm(`هل تريد شحن هذا العرض بقيمة ${valMatch[0]} DA؟`)) {
-                        submitFlexyMain(phone, valMatch[0]);
+                // Show loading state on button
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التفعيل...';
+                btn.disabled = true;
+
+                try {
+                    const rRes = await fetch(getApiUrl('/api/offers/send'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone, optionId: o.optionId, amount: o.amount })
+                    });
+                    const rData = await rRes.json();
+                    if (rData.success) {
+                        alert('✅ ' + rData.message);
+                        box.style.display = 'none';
+                        document.getElementById('main-phone').value = '';
+                    } else {
+                        alert('❌ خطأ: ' + (rData.error || 'حدث خطأ غير معروف'));
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
                     }
-                };
-                list.appendChild(btn);
-            });
-        } else throw new Error(data.error || 'فشل جلب العروض');
+                } catch (err) {
+                    alert('❌ خطأ في الاتصال بالسيرفر');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            };
+            list.appendChild(btn);
+        });
     } catch (e) {
         loading.style.display = 'none';
-        alert('خطأ: ' + e.message);
-    }
-}
-
-async function handleInvoiceMain() {
-    const phone = document.getElementById('main-phone').value;
-    if (!phone || phone.length < 10) return alert('يرجى إدخال رقم صحيح');
-    const amount = prompt('أدخل قيمة الفاتورة (DA):');
-    if (!amount) return;
-
-    try {
-        const res = await fetch(getApiUrl('/api/flexy/invoice'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, amount })
-        });
-        const data = await res.json();
-        if (data.success) alert('تم إرسال طلب الفاتورة');
-        else alert('خطأ: ' + data.error);
-    } catch (e) { alert('فشل الاتصال'); }
-}
-
-async function handleInternationalMain() {
-    const phone = document.getElementById('main-phone').value;
-    if (!phone || phone.length < 10) return alert('يرجى إدخال رقم صحيح');
-    const amount = prompt('أدخل القيمة (Alo International):');
-    if (!amount) return;
-
-    try {
-        const res = await fetch(getApiUrl('/api/flexy/international'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, amount })
-        });
-        const data = await res.json();
-        if (data.success) alert('تم إرسال الطلب الدولي');
-        else alert('خطأ: ' + data.error);
-    } catch (e) { alert('فشل الاتصال'); }
-}
-
-async function loadOffersDynamically() {
-    const box = document.getElementById('main-offers-box');
-    const list = document.getElementById('main-offers-list');
-    const phone = document.getElementById('main-phone').value;
-    
-    if (!phone || phone.length < 10) return alert('يرجى إدخال رقم الهاتف أولاً');
-
-    box.style.display = 'block';
-    const isOoredoo = phone.startsWith('05');
-
-    if (isOoredoo) {
-        list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--primary);">جاري تحميل عروض Ooredoo...</div>';
-        try {
-            const res = await fetch(getApiUrl('/api/offers/ooredoo'));
-            const offers = await res.json();
-            list.innerHTML = '';
-            
-            offers.forEach(o => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-neon';
-                btn.style.fontSize = '0.8rem';
-                btn.style.padding = '10px';
-                btn.style.display = 'flex';
-                btn.style.flexDirection = 'column';
-                btn.style.alignItems = 'center';
-                btn.style.gap = '5px';
-                btn.style.background = 'rgba(255, 255, 255, 0.05)';
-                
-                btn.innerHTML = `
-                    <img src="${o.image}" alt="${o.name}" style="width: 50px; height: 50px; object-fit: contain; border-radius: 8px;">
-                    <span style="font-size: 0.75rem;">${o.name}</span>
-                    <small style="color: var(--success); font-weight: 800;">${o.amount ? o.amount + ' DA' : ''}</small>
-                `;
-                
-                btn.onclick = async () => {
-                    if (!confirm(`هل تريد إرسال العرض ${o.name} للرقم ${phone}؟`)) return;
-                    
-                    const rRes = await fetch(getApiUrl('/api/offers/ooredoo/send'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone, optionId: o.optionId })
-                    });
-                    const rData = await rRes.json();
-                    if (rData.success) alert('✅ ' + rData.message);
-                    else alert('❌ خطأ: ' + rData.error);
-                };
-                list.appendChild(btn);
-            });
-        } catch (e) {
-            alert('فشل جلب عروض أوريدو');
-        }
-    } else {
-        list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--primary);">جاري تحميل عروض Sama Pro...</div>';
-        try {
-            const res = await fetch(getApiUrl('/api/sama/offers-list'));
-            const offers = await res.json();
-            list.innerHTML = '';
-            
-            offers.forEach(o => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-neon';
-                btn.style.fontSize = '0.8rem';
-                btn.style.padding = '15px';
-                btn.style.display = 'flex';
-                btn.style.flexDirection = 'column';
-                btn.style.alignItems = 'center';
-                btn.style.gap = '5px';
-                
-                let icon = 'fas fa-phone';
-                if (o.type === 'Net') icon = 'fas fa-wifi';
-                if (o.type === 'PixX') icon = 'fas fa-bolt';
-                
-                btn.innerHTML = `
-                    <i class="${icon}" style="font-size: 1.2rem; color: var(--primary);"></i>
-                    <span>${o.name}</span>
-                    <small style="color: var(--success); font-weight: 800;">${o.amount} DA</small>
-                `;
-                
-                btn.onclick = async () => {
-                    if (!confirm(`هل تريد شحن ${o.name} للرقم ${phone}؟`)) return;
-                    const rRes = await fetch(getApiUrl('/api/sama/recharge-offer'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone, offerId: o.id })
-                    });
-                    const rData = await rRes.json();
-                    if (rData.success) alert('✅ تم بدء عملية الشحن');
-                    else alert('❌ خطأ: ' + rData.error);
-                    fetchData();
-                };
-                list.appendChild(btn);
-            });
-        } catch (e) {
-            alert('فشل جلب قائمة العروض');
-        }
+        alert('فشل جلب العروض من السيرفر. تأكد من تشغيل السيرفر المحدث.');
     }
 }
 
@@ -571,5 +632,115 @@ async function submitFlexyMain(phone, amount) {
     } catch (e) { alert('فشل عملية الشحن'); }
 }
 
+// --- AGENTS MANAGEMENT ---
+let ADMIN_KEY = localStorage.getItem('admin_key') || '';
+
+function openAgentsModal() {
+    if (!ADMIN_KEY) {
+        ADMIN_KEY = prompt('أدخل مفتاح الإدارة (Admin Key) للوصول للوكلاء:');
+        if (!ADMIN_KEY) return;
+        localStorage.setItem('admin_key', ADMIN_KEY);
+    }
+    document.getElementById('agents-modal').style.display = 'flex';
+    fetchAgents();
+}
+
+async function fetchAgents() {
+    const list = document.getElementById('agents-list');
+    list.innerHTML = '<tr><td colspan="5" style="text-align:center;">جاري التحميل...</td></tr>';
+    try {
+        const res = await fetch(getApiUrl('/api/agents'), {
+            headers: { 'Authorization': ADMIN_KEY }
+        });
+        if (res.status === 401) {
+            alert('مفتاح الإدارة غير صحيح!');
+            localStorage.removeItem('admin_key');
+            ADMIN_KEY = '';
+            closeModals();
+            return;
+        }
+        const data = await res.json();
+        if (data.success) {
+            list.innerHTML = '';
+            data.agents.forEach(agent => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid var(--glass-border)';
+                tr.innerHTML = `
+                    <td style="padding: 15px;">${agent.id}</td>
+                    <td style="padding: 15px; font-weight: 600;">${agent.name}</td>
+                    <td style="padding: 15px;">${agent.telegram_id || '-'}</td>
+                    <td style="padding: 15px; font-weight: 700; color: var(--success);">${agent.balance} دج</td>
+                    <td style="padding: 15px;"><span style="color: ${agent.status === 'suspended' ? 'var(--danger)' : 'var(--success)'}">${agent.status === 'suspended' ? 'موقوف' : 'نشط'}</span></td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        list.innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">فشل الاتصال بالسيرفر. تأكد من أن المنفذ 3005 يعمل وأنه مضاف في إعدادات الاتصال.</td></tr>';
+    }
+}
+
+function showAddAgentForm() {
+    const form = document.getElementById('add-agent-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveNewAgent() {
+    const name = document.getElementById('agent-name').value;
+    const phone = document.getElementById('agent-phone').value;
+    const telegram_id = document.getElementById('agent-tg').value;
+    const balance = document.getElementById('agent-balance').value;
+
+    if (!name || !telegram_id) return alert('الاسم ومعرف التلغرام مطلوبان');
+
+    try {
+        const res = await fetch(getApiUrl('/api/agents'), {
+            method: 'POST',
+            headers: { 'Authorization': ADMIN_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, telegram_id, balance: parseFloat(balance) })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('تمت الإضافة بنجاح');
+            showAddAgentForm();
+            fetchAgents();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    } catch (e) {
+        alert('فشل الاتصال بالسيرفر');
+    }
+}
+
+// Also close agents modal in closeModals()
+const originalCloseModals = closeModals;
+closeModals = function() {
+    originalCloseModals();
+    const agModal = document.getElementById('agents-modal');
+    if (agModal) agModal.style.display = 'none';
+}
+
 setInterval(syncAllBalances, 60000); // Auto USSD balance sync every minute
 fetchData();
+
+async function submitFlexyMain(phone, amount) {
+    if (!confirm(`????? ????? ${amount} DA ????? ${phone}?`)) return;
+    try {
+        const res = await fetch(getApiUrl('/api/flexy'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account: phone, amount: amount, type: '1' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('?? ????? ?????');
+            document.getElementById('main-phone').value = '';
+            document.getElementById('main-amount').value = '';
+        } else {
+            alert('??? ????? ?????: ' + (data.error || data.message || ''));
+        }
+    } catch(e) { 
+        alert('??? ?????: ' + e.message); 
+    }
+}
+
