@@ -557,9 +557,15 @@ async function loadOffersDynamically() {
         const res = await fetch(getApiUrl(`/api/offers/${opPath}`));
         const offers = await res.json();
         loading.style.display = 'none';
+        
+        if (!res.ok || offers.success === false) {
+            alert('❌ خطأ من السيرفر: ' + (offers.error || offers.message || 'غير مصرح'));
+            return;
+        }
+
         box.style.display = 'block';
         
-        if (!offers || offers.length === 0) {
+        if (!Array.isArray(offers) || offers.length === 0) {
             list.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--warning);">لا توجد عروض مسجلة لهذا المتعامل.</div>';
             return;
         }
